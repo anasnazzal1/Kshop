@@ -10,6 +10,7 @@ import Register from "./pages/Register/Register";
 import Login from "./pages/Login/Login";
 import ForgitPassword from "./pages/ForgitPassword/ForgitPassword";
 import ResetPassword from "./pages/ResetPassword/ResetPassword";
+import ProdactDetails from "./pages/ProdactDetails/ProdactDetails";
 
 
 const router = createBrowserRouter([
@@ -45,6 +46,10 @@ const router = createBrowserRouter([
         {
           path:"/ResetPassword",
           element:<ResetPassword/>
+        },
+         {
+          path:"/ProdactDetails/:id",
+          element:<ProdactDetails/>
         }
     ]
   },

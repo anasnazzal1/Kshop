@@ -14,6 +14,7 @@ import { Link } from 'react-router';
   try {
     const response = await axios.post("http://mytshop.runasp.net/api/Account/Login", data);
     console.log("✅ Success:", response.data);
+    localStorage.setItem("UserToken",response.data.token)
   } catch (error) {
     console.error("❌ Error:", error.response?.data || error.message);
   }
