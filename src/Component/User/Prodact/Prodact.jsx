@@ -14,37 +14,36 @@ import {
 } from "@mui/material";
 import { Link } from "react-router-dom";
 import { Bounce, toast } from "react-toastify";
+import UseFetch from "../../../hook/UseFetch";
 
 function Prodact() {
   const [prodact, setProdact] = useState([]);
-  const [isError, setError] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  
 
-  const GetProdact = async () => {
-    try {
-      const response = await axios.get("https://mytshop.runasp.net/api/products");
-      
-      setProdact(response.data);
-      
-    } catch (error) {
-        toast.error(error.response?.data?.message || error.message, {
-        position: "top-right",
-        autoClose: 3000,
-        theme: "dark",
-        transition: Bounce,
-      });
-      setError(true);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+
+
+
+
+
+const {data,isError,isLoading} = UseFetch("https://mytshop.runasp.net/api/products")
+
+  
+
 
   useEffect(() => {
-    GetProdact();
-  }, []);
+  if (data && Array.isArray(data.data)) {
+    setProdact(data.data);
+  }
+}, [data]);
+
+
 
   if (isError) return <ErrorPage />;
   if (isLoading) return <Loader />;
+
+
+
+
 
   return (
     <Container sx={{ mt: 5 }}>

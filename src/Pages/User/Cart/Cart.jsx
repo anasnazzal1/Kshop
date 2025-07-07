@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import {
   Container,
   Typography,
@@ -17,31 +17,33 @@ import {
   FormControlLabel,
   Radio,
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import ErrorPage from "../../../Component/User/ErrorPage/ErrorPage";
 import Loader from "../../../Component/User/Loader/Loader";
 import { Bounce, toast } from "react-toastify";
+import { CartContext } from "../../../Context/CartContext";
+import axiosAuth from "../../../api/Auth";
 
 function Cart() {
+  const theme = useTheme();
   const token = localStorage.getItem("UserToken");
   const [prodact, setProdact] = useState([]);
   const [isError, setError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [totalPrice, setTotalPrice] = useState(0);
   const [PymentMethod, setPymantMethod] = useState("Visa");
-
+  const { counter, setCounter } = useContext(CartContext);
   const headers = {
     Authorization: `Bearer ${token}`,
   };
 
   const GetProdact = async () => {
     try {
-      const response = await axios.get("https://mytshop.runasp.net/api/Carts", {
-        headers,
-      });
+      const response = await  axiosAuth.get("/Carts");
       setProdact(response.data.cartResponse);
       setTotalPrice(response.data.totalPrice);
     } catch (error) {
-        toast.error(error.response?.data?.message || error.message, {
+      toast.error(error.response?.data?.message || error.message, {
         position: "top-right",
         autoClose: 3000,
         theme: "dark",
@@ -57,22 +59,19 @@ function Cart() {
     GetProdact();
   }, []);
 
-  const hendleChange = (e) => {
-    setPymantMethod(e.target.value);
-  };
+  const hendleChange = (e) => setPymantMethod(e.target.value);
 
   const HandlePayment = async () => {
     try {
-      const response = await axios.post(
-        "https://mytshop.runasp.net/api/CheckOuts/Pay",
-        { PaymentMethod: PymentMethod },
-        { headers }
+      const response = await axiosAuth.post(
+        "/CheckOuts/Pay",
+        { PaymentMethod: PymentMethod }
       );
       if (response.status === 200) {
         location.href = response.data.url;
       }
     } catch (error) {
-        toast.error(error.response?.data?.message || error.message, {
+      toast.error(error.response?.data?.message || error.message, {
         position: "top-right",
         autoClose: 3000,
         theme: "dark",
@@ -84,10 +83,9 @@ function Cart() {
   const increaseQuantity = async (id) => {
     let Salary = 0;
     try {
-      const respnse = await axios.patch(
+      const respnse = await axiosAuth.patch(
         `https://mytshop.runasp.net/api/Carts/increaseCount/${id}`,
-        {},
-        { headers }
+        {}
       );
       if ([200, 201, 204].includes(respnse.status)) {
         const newProdact = prodact.map((e) => {
@@ -99,9 +97,10 @@ function Cart() {
         });
         setProdact(newProdact);
         setTotalPrice(totalPrice + Salary);
+        setCounter(counter + 1);
       }
     } catch (error) {
-        toast.error(error.response?.data?.message || error.message, {
+      toast.error(error.response?.data?.message || error.message, {
         position: "top-right",
         autoClose: 3000,
         theme: "dark",
@@ -113,10 +112,9 @@ function Cart() {
   const decreaseQuantity = async (id) => {
     let Salary = 0;
     try {
-      const respnse = await axios.patch(
+      const respnse = await axiosAuth.patch(
         `https://mytshop.runasp.net/api/Carts/decreaseCount/${id}`,
-        {},
-        { headers }
+        {}
       );
       if ([200, 201, 204].includes(respnse.status)) {
         const newProdact = prodact.map((e) => {
@@ -128,9 +126,10 @@ function Cart() {
         });
         setProdact(newProdact);
         setTotalPrice(totalPrice - Salary);
+        setCounter(counter - 1);
       }
     } catch (error) {
-        toast.error(error.response?.data?.message || error.message, {
+      toast.error(error.response?.data?.message || error.message, {
         position: "top-right",
         autoClose: 3000,
         theme: "dark",
@@ -142,7 +141,7 @@ function Cart() {
   const deleteItem = async (id) => {
     let Salary = 0;
     let count = 0;
-    prodact.map((e) => {
+    prodact.forEach((e) => {
       if (e.id === id) {
         Salary = e.price;
         count = e.count;
@@ -150,17 +149,15 @@ function Cart() {
     });
 
     try {
-      const respnse = await axios.delete(
-        `https://mytshop.runasp.net/api/Carts/${id}`,
-        { headers }
-      );
+      const respnse = await axiosAuth.delete(`https://mytshop.runasp.net/api/Carts/${id}`);
       if ([200, 201, 204].includes(respnse.status)) {
         const newProdact = prodact.filter((e) => e.id !== id);
         setProdact(newProdact);
         setTotalPrice(totalPrice - Salary * count);
+        setCounter(counter - count);
       }
     } catch (error) {
-        toast.error(error.response?.data?.message || error.message, {
+      toast.error(error.response?.data?.message || error.message, {
         position: "top-right",
         autoClose: 3000,
         theme: "dark",
@@ -171,10 +168,7 @@ function Cart() {
 
   const ClearCart = async () => {
     try {
-      const respnse = await axios.delete(
-        "https://mytshop.runasp.net/api/Carts/clearCart",
-        { headers }
-      );
+      await axiosAuth.delete("https://mytshop.runasp.net/api/Carts/clearCart");
       setProdact([]);
       setTotalPrice(0);
       toast.success("Clear all is done", {
@@ -186,8 +180,9 @@ function Cart() {
         theme: "dark",
         transition: Bounce,
       });
+      setCounter(0);
     } catch (error) {
-        toast.error(error.response?.data?.message || error.message, {
+      toast.error(error.response?.data?.message || error.message, {
         position: "top-right",
         autoClose: 3000,
         theme: "dark",
@@ -198,6 +193,7 @@ function Cart() {
 
   if (isError) return <ErrorPage />;
   if (isLoading) return <Loader />;
+
 
   return (
     <Container maxWidth="lg" sx={{ mt: 6, mb: 6 }}>
@@ -211,14 +207,13 @@ function Cart() {
         </Typography>
       ) : (
         <>
-          {/* Clear All Button */}
           <Box textAlign="right" mb={2}>
             <Box
               component="button"
               onClick={ClearCart}
               sx={{
-                backgroundColor: "#f44336",
-                color: "#fff",
+                backgroundColor: theme.palette.error.main,
+                color: theme.palette.error.contrastText,
                 px: 3,
                 py: 1,
                 border: "none",
@@ -228,7 +223,7 @@ function Cart() {
                 cursor: "pointer",
                 transition: "all 0.3s ease",
                 "&:hover": {
-                  backgroundColor: "#d32f2f",
+                  backgroundColor: theme.palette.error.dark,
                   transform: "scale(1.05)",
                 },
               }}
@@ -273,7 +268,7 @@ function Cart() {
 
                     <Typography variant="body2" mb={1}>
                       Total:{" "}
-                      <strong style={{ color: "#1976d2" }}>
+                      <strong style={{ color: theme.palette.primary.main }}>
                         ${(item.price * item.count).toFixed(2)}
                       </strong>
                     </Typography>
@@ -290,7 +285,7 @@ function Cart() {
                     <Stack direction="row" spacing={1} mt={2} alignItems="center">
                       <Box
                         component="button"
-                        sx={iconBtnSx}
+                        sx={iconBtnSx(theme)}
                         onClick={() => decreaseQuantity(item.id)}
                         disabled={item.count <= 1}
                       >
@@ -299,7 +294,7 @@ function Cart() {
                       <Typography>{item.count}</Typography>
                       <Box
                         component="button"
-                        sx={iconBtnSx}
+                        sx={iconBtnSx(theme)}
                         onClick={() => increaseQuantity(item.id)}
                       >
                         +
@@ -307,7 +302,7 @@ function Cart() {
                       <Box sx={{ flexGrow: 1 }} />
                       <Box
                         component="button"
-                        sx={deleteBtnSx}
+                        sx={deleteBtnSx(theme)}
                         onClick={() => deleteItem(item.id)}
                       >
                         🗑️
@@ -319,7 +314,6 @@ function Cart() {
             ))}
           </Grid>
 
-          {/* Total Price */}
           <Paper
             elevation={4}
             sx={{
@@ -338,7 +332,6 @@ function Cart() {
             </Typography>
           </Paper>
 
-          {/* Checkout Section */}
           <Box
             sx={{
               maxWidth: 500,
@@ -347,7 +340,7 @@ function Cart() {
               p: 3,
               borderRadius: 4,
               boxShadow: 3,
-              backgroundColor: "#fafafa",
+              backgroundColor: theme.palette.background.paper,
             }}
           >
             <Typography variant="h5" fontWeight="bold" mb={2} textAlign="center">
@@ -365,7 +358,7 @@ function Cart() {
               </RadioGroup>
             </FormControl>
 
-            <Box component="button" onClick={HandlePayment} sx={checkoutBtnSx}>
+            <Box component="button" onClick={HandlePayment} sx={checkoutBtnSx(theme)}>
               💳 Checkout
             </Box>
           </Box>
@@ -375,11 +368,11 @@ function Cart() {
   );
 }
 
-// Style for quantity buttons
-const iconBtnSx = {
+// Dynamic styles based on theme
+const iconBtnSx = (theme) => ({
   px: 2,
   py: 1,
-  backgroundColor: "#eeeeee",
+  backgroundColor: theme.palette.action.hover,
   border: "none",
   borderRadius: "6px",
   cursor: "pointer",
@@ -387,38 +380,37 @@ const iconBtnSx = {
   fontSize: "16px",
   transition: "all 0.3s ease",
   "&:hover": {
-    backgroundColor: "#d0d0d0",
+    backgroundColor: theme.palette.action.selected,
     transform: "scale(1.05)",
   },
   "&:disabled": {
-    backgroundColor: "#cccccc",
+    backgroundColor: theme.palette.action.disabledBackground,
     cursor: "not-allowed",
   },
-};
+});
 
-// Style for delete button
-const deleteBtnSx = {
+const deleteBtnSx = (theme) => ({
   px: 2,
   py: 1,
-  backgroundColor: "#ffebee",
-  color: "#d32f2f",
+  backgroundColor: theme.palette.error.light,
+  color: theme.palette.error.main,
   border: "none",
   borderRadius: "6px",
   cursor: "pointer",
   fontSize: "16px",
   transition: "all 0.3s ease",
   "&:hover": {
-    backgroundColor: "#ffcdd2",
+    backgroundColor: theme.palette.error.main,
+    color: theme.palette.error.contrastText,
     transform: "scale(1.05)",
   },
-};
+});
 
-// Style for checkout button
-const checkoutBtnSx = {
+const checkoutBtnSx = (theme) => ({
   mt: 3,
   width: "100%",
-  backgroundColor: "#1976d2",
-  color: "#fff",
+  backgroundColor: theme.palette.primary.main,
+  color: theme.palette.primary.contrastText,
   py: 1.5,
   border: "none",
   borderRadius: "8px",
@@ -427,9 +419,9 @@ const checkoutBtnSx = {
   cursor: "pointer",
   transition: "all 0.3s ease",
   "&:hover": {
-    backgroundColor: "#115293",
+    backgroundColor: theme.palette.primary.dark,
     transform: "scale(1.02)",
   },
-};
+});
 
 export default Cart;

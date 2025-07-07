@@ -11,33 +11,21 @@ import {
   Box
 } from "@mui/material";
 import { Bounce, toast } from "react-toastify";
+import { daDK } from "@mui/material/locale";
+import UseFetch from "../../../hook/UseFetch";
 
 function Catgry() {
   const [catgry, setCatgry] = useState([]);
-  const [isError, setError] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
-  const GetCatgry = async () => {
-    try {
-      const response = await axios.get("https://mytshop.runasp.net/api/categories");
-      
-      setCatgry(response.data);
-    } catch (error) {
-        toast.error(error.response?.data?.message || error.message, {
-        position: "top-right",
-        autoClose: 3000,
-        theme: "dark",
-        transition: Bounce,
-      });;
-      setError(true);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+
+const {data,isError,isLoading} = UseFetch("https://mytshop.runasp.net/api/categories")
+
+  
+
 
   useEffect(() => {
-    GetCatgry();
-  }, []);
+    setCatgry(data)
+  }, [data]);
 
   if (isError) return <ErrorPage />;
   if (isLoading) return <Loader />;

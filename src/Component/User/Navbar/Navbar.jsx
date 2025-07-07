@@ -1,4 +1,3 @@
-
 import * as React from 'react';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
@@ -14,50 +13,60 @@ import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
 import AdbIcon from '@mui/icons-material/Adb';
 import { Link, useNavigate } from 'react-router-dom';
+import { CartContext } from '../../../Context/CartContext';
+import { useContext } from 'react';
+import { ThemeContext } from '../../../Context/ThemeContext';
 
-const pages = ['home', 'cart', 'Login',"register"];
-const settings = ['Profile', 'Account', 'Dashboard', 'Logout'];
-const PagesUser = ["home","cart","logout"]
-const pageGust = ["home",'Login',"register"]
+const PagesUser = ["home", "cart", "logout"];
+const pageGuest = ["home", 'Login', "register"];
+
 function Navbar() {
- 
+  const { counter } = useContext(CartContext);
+  const { mode, toogleMode } = useContext(ThemeContext);
+
   const [anchorElNav, setAnchorElNav] = React.useState(null);
   const [anchorElUser, setAnchorElUser] = React.useState(null);
-  
-    const isLogin = Boolean(localStorage.getItem("UserToken"))
 
-const navigate = useNavigate();
-    const logout = ()=>{
-      localStorage.removeItem("UserToken");
-      navigate("/home")
-    }
+  const isLogin = Boolean(localStorage.getItem("UserToken"));
+  const navigate = useNavigate();
+
+  const logout = () => {
+    console.log("Logging out user...");
+    localStorage.removeItem("UserToken");
+    navigate("/home");
+    console.log("User logged out and redirected to /home");
+  };
+
   const handleOpenNavMenu = (event) => {
+    console.log("Opening navigation menu");
     setAnchorElNav(event.currentTarget);
   };
   const handleOpenUserMenu = (event) => {
+    console.log("Opening user menu");
     setAnchorElUser(event.currentTarget);
   };
-
   const handleCloseNavMenu = () => {
+    console.log("Closing navigation menu");
     setAnchorElNav(null);
   };
-
   const handleCloseUserMenu = () => {
+    console.log("Closing user menu");
     setAnchorElUser(null);
   };
+
+  console.log("Navbar render - isLogin:", isLogin, "cart counter:", counter, "theme mode:", mode);
 
   return (
     <AppBar position="static">
       <Container maxWidth="xl">
         <Toolbar disableGutters>
+
           <AdbIcon sx={{ display: { xs: 'none', md: 'flex' }, mr: 1 }} />
           <Typography
-          component={Link}
-          to={"home"}
+            component={Link}
+            to={"home"}
             variant="h6"
             noWrap
-           
-            href="#app-bar-with-responsive-menu"
             sx={{
               mr: 2,
               display: { xs: 'none', md: 'flex' },
@@ -71,49 +80,40 @@ const navigate = useNavigate();
             LOGO
           </Typography>
 
+          {/* Small screen menu */}
           <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
-            <IconButton
-              size="large"
-              aria-label="account of current user"
-              aria-controls="menu-appbar"
-              aria-haspopup="true"
-              onClick={handleOpenNavMenu}
-              color="inherit"
-            >
+            <IconButton size="large" onClick={handleOpenNavMenu} color="inherit">
               <MenuIcon />
             </IconButton>
             <Menu
-              id="menu-appbar"
               anchorEl={anchorElNav}
-              anchorOrigin={{
-                vertical: 'bottom',
-                horizontal: 'left',
-              }}
-              keepMounted
-              transformOrigin={{
-                vertical: 'top',
-                horizontal: 'left',
-              }}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'left' }}
               open={Boolean(anchorElNav)}
               onClose={handleCloseNavMenu}
               sx={{ display: { xs: 'block', md: 'none' } }}
-              
             >
-              {(isLogin? PagesUser:pageGust).map((page) => (
-                <MenuItem key={page} onClick={handleCloseNavMenu}  component={Link}
-              to={`/${page}`}>
-                  <Typography sx={{ textAlign: 'center' }}>{page}</Typography>
+              {(isLogin ? PagesUser : pageGuest).map((page) => (
+                <MenuItem
+                  key={page}
+                  onClick={page === "logout" ? () => { logout(); handleCloseNavMenu(); } : handleCloseNavMenu}
+                  component={Link}
+                  to={`/${page}`}
+                >
+                  <Typography textAlign="center" >
+                    {isLogin && page === "cart" ? `cart (${counter})` : page}
+                  </Typography>
                 </MenuItem>
               ))}
             </Menu>
           </Box>
+
           <AdbIcon sx={{ display: { xs: 'flex', md: 'none' }, mr: 1 }} />
           <Typography
             variant="h5"
             noWrap
             component={Link}
-          to={"home"}
-            href="#app-bar-with-responsive-menu"
+            to={"home"}
             sx={{
               mr: 2,
               display: { xs: 'flex', md: 'none' },
@@ -127,56 +127,94 @@ const navigate = useNavigate();
           >
             LOGO
           </Typography>
-          <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
-            {(isLogin ? PagesUser : pageGust).map((page) =>
-                  page !== "logout" ? (
-                    <Button
-                      key={page}
-                      component={Link}
-                      to={`/${page}`}
-                      onClick={handleCloseNavMenu}
-                      sx={{ my: 2, color: 'white', display: 'block' }}
-                    >
-                      {page}
-                    </Button>
-                  ) : (
-                    <Button
-                      key="logout"
-                      onClick={logout}
-                      sx={{ my: 2, color: 'white', display: 'block' }}
-                      
-                    >
-                      Logout
-                    </Button>
-                  )
-                )}
 
+          {/* Pages on large screen */}
+          <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
+            {(isLogin ? PagesUser : pageGuest).map((page) =>
+              page !== "logout" ? (
+                <Button
+                  key={page}
+                  component={Link}
+                  to={`/${page}`}
+                  onClick={handleCloseNavMenu}
+                  sx={{
+                    my: 2,
+                    mx: 0.5, 
+                    color: mode === 'dark' ? 'white' : 'inherit',
+                    backgroundColor: mode === 'dark' ? '#333' : 'transparent',
+                    display: 'block',
+                    '&:hover': {
+                      backgroundColor: mode === 'dark' ? '#555' : 'rgba(255, 255, 255, 0.08)',
+                    },
+                  }}
+                >
+                  {isLogin && page === "cart" ? `cart (${counter})` : page}
+                </Button>
+              ) : (
+                <Button
+                  key="logout"
+                  onClick={() => {
+                    logout();
+                    handleCloseNavMenu();
+                  }}
+                  sx={{
+                    my: 2,
+                  mx: 0.5, 
+                    color: mode === 'dark' ? 'white' : 'inherit',
+                    backgroundColor: mode === 'dark' ? '#333' : 'transparent',
+                    display: 'block',
+                    '&:hover': {
+                      backgroundColor: mode === 'dark' ? '#555' : 'rgba(255, 255, 255, 0.08)',
+                    },
+                  }}
+                >
+                  Logout
+                </Button>
+              )
+            )}
           </Box>
-          <Box sx={{ flexGrow: 0 }}>
+
+          {/* Toggle Theme + Avatar */}
+          <Box sx={{ flexGrow: 0, display: "flex", alignItems: "center", gap: 2 }}>
+            <Tooltip title="Toggle theme">
+              <IconButton onClick={() => { 
+                console.log("Toggling theme mode from", mode); 
+                toogleMode(); 
+              }} color="inherit">
+                {mode === "light" ? (
+                  <span style={{ fontSize: 18 }}>🌙</span>
+                ) : (
+                  <span style={{ fontSize: 18 }}>☀️</span>
+                )}
+              </IconButton>
+            </Tooltip>
+
             <Tooltip title="Open settings">
               <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
                 <Avatar alt="Remy Sharp" src="/static/images/avatar/2.jpg" />
               </IconButton>
             </Tooltip>
+
             <Menu
               sx={{ mt: '45px' }}
-              id="menu-appbar"
               anchorEl={anchorElUser}
-              anchorOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
-              keepMounted
-              transformOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
+              anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
               open={Boolean(anchorElUser)}
               onClose={handleCloseUserMenu}
             >
-              {settings.map((setting) => (
-                <MenuItem key={setting} onClick={handleCloseUserMenu}>
-                  <Typography sx={{ textAlign: 'center' }}>{setting}</Typography>
+              {['Profile', 'Account', 'Dashboard', 'Logout'].map((setting) => (
+                <MenuItem
+                  key={setting}
+                  onClick={() => {
+                    console.log("Clicked user menu item:", setting);
+                    if (setting === "Logout") {
+                      logout();
+                    }
+                    handleCloseUserMenu();
+                  }}
+                >
+                  <Typography textAlign="center">{setting}</Typography>
                 </MenuItem>
               ))}
             </Menu>
@@ -186,4 +224,5 @@ const navigate = useNavigate();
     </AppBar>
   );
 }
+
 export default Navbar;
