@@ -78,7 +78,7 @@ const {data,isError,isLoading} = UseFetch("https://mytshop.runasp.net/api/produc
                 <Typography variant="subtitle1" fontWeight="bold" color="text.primary">
                   ${p.price?.toFixed(2) || "N/A"}
                 </Typography>
-                <Button size="small" variant="outlined" color="primary" component={Link} to={`details/${p.id}`}>
+                <Button size="small" variant="outlined" color="primary" component={Link} to={`details/${p.id}`} viewTransition >
                   Details
                 </Button>
               </CardActions>
