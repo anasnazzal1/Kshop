@@ -26,7 +26,7 @@ const router = createBrowserRouter([
       { path: "login", element: <Login /> },
       { path: "register", element: <Register /> },
       { path: "home/details/:id", element: <ProdactDetails /> },
-      { path: "forgitpassword", element: <ForgitPassoword /> },
+      { path: "ForgitPassoword", element: <ForgitPassoword /> },
       { path: "sendcode", element: <SendCode /> },
     ],
   },
