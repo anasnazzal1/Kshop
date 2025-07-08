@@ -15,30 +15,28 @@ import {
 import { Link } from "react-router-dom";
 import { Bounce, toast } from "react-toastify";
 import UseFetch from "../../../hook/UseFetch";
+import { useQuery } from "@tanstack/react-query";
 
 function Prodact() {
-  const [prodact, setProdact] = useState([]);
+  // fetch data by local useFetch hook
+//   const [prodact, setProdact] = useState([]);
+// const {data,isError,isLoading} = UseFetch("https://mytshop.runasp.net/api/products")
+//   useEffect(() => {
+//   if (data && Array.isArray(data.data)) {
+//     setProdact(data.data);
+//   }
+// }, [data]);
+
+ const { data, isLoading, error } = useQuery({
+    queryKey: ['Prodact'], // مفتاح فريد
+    queryFn: () => axios.get('https://mytshop.runasp.net/api/products').then(res => res.data.data),
+  });
   
 
 
 
 
-
-
-const {data,isError,isLoading} = UseFetch("https://mytshop.runasp.net/api/products")
-
-  
-
-
-  useEffect(() => {
-  if (data && Array.isArray(data.data)) {
-    setProdact(data.data);
-  }
-}, [data]);
-
-
-
-  if (isError) return <ErrorPage />;
+  if (error) return <ErrorPage />;
   if (isLoading) return <Loader />;
 
 
@@ -52,7 +50,7 @@ const {data,isError,isLoading} = UseFetch("https://mytshop.runasp.net/api/produc
       </Typography>
 
       <Grid container spacing={4}>
-        {prodact.map((p) => (
+        {data.map((p) => (
           <Grid item xs={12} sm={6} md={4} key={p.id}>
             <Card sx={{ height: "100%", display: "flex", flexDirection: "column", boxShadow: 4 }}>
               {p.mainImg && (

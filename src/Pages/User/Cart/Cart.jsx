@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useState } from "react";
 import {
   Container,
   Typography,
@@ -23,177 +23,134 @@ import Loader from "../../../Component/User/Loader/Loader";
 import { Bounce, toast } from "react-toastify";
 import { CartContext } from "../../../Context/CartContext";
 import axiosAuth from "../../../api/Auth";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 function Cart() {
+  const queryClient = useQueryClient();
   const theme = useTheme();
-  const token = localStorage.getItem("UserToken");
-  const [prodact, setProdact] = useState([]);
-  const [isError, setError] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [totalPrice, setTotalPrice] = useState(0);
-  const [PymentMethod, setPymantMethod] = useState("Visa");
   const { counter, setCounter } = useContext(CartContext);
-  const headers = {
-    Authorization: `Bearer ${token}`,
-  };
 
-  const GetProdact = async () => {
-    try {
-      const response = await  axiosAuth.get("/Carts");
-      setProdact(response.data.cartResponse);
-      setTotalPrice(response.data.totalPrice);
-    } catch (error) {
-      toast.error(error.response?.data?.message || error.message, {
-        position: "top-right",
-        autoClose: 3000,
-        theme: "dark",
-        transition: Bounce,
-      });
-      setError(true);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const [PymentMethod, setPymantMethod] = useState("Visa");
 
-  useEffect(() => {
-    GetProdact();
-  }, []);
+  // جلب بيانات العربة
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ["CartProducts"],
+    queryFn: () => axiosAuth.get("/Carts").then((res) => res.data),
+    staleTime: 1000 * 60 * 5, // 5 دقائق Cache (اختياري)
+  });
 
-  const hendleChange = (e) => setPymantMethod(e.target.value);
+  // دالة الدفع
+  const handleChange = (e) => setPymantMethod(e.target.value);
 
-  const HandlePayment = async () => {
-    try {
-      const response = await axiosAuth.post(
-        "/CheckOuts/Pay",
-        { PaymentMethod: PymentMethod }
-      );
-      if (response.status === 200) {
-        location.href = response.data.url;
-      }
-    } catch (error) {
-      toast.error(error.response?.data?.message || error.message, {
-        position: "top-right",
-        autoClose: 3000,
-        theme: "dark",
-        transition: Bounce,
-      });
-    }
-  };
-
-  const increaseQuantity = async (id) => {
-    let Salary = 0;
-    try {
-      const respnse = await axiosAuth.patch(
-        `https://mytshop.runasp.net/api/Carts/increaseCount/${id}`,
-        {}
-      );
-      if ([200, 201, 204].includes(respnse.status)) {
-        const newProdact = prodact.map((e) => {
-          if (e.id === id) {
-            Salary = e.price;
-            return { ...e, count: e.count + 1 };
-          }
-          return e;
-        });
-        setProdact(newProdact);
-        setTotalPrice(totalPrice + Salary);
-        setCounter(counter + 1);
-      }
-    } catch (error) {
-      toast.error(error.response?.data?.message || error.message, {
-        position: "top-right",
-        autoClose: 3000,
-        theme: "dark",
-        transition: Bounce,
-      });
-    }
-  };
-
-  const decreaseQuantity = async (id) => {
-    let Salary = 0;
-    try {
-      const respnse = await axiosAuth.patch(
-        `https://mytshop.runasp.net/api/Carts/decreaseCount/${id}`,
-        {}
-      );
-      if ([200, 201, 204].includes(respnse.status)) {
-        const newProdact = prodact.map((e) => {
-          if (e.id === id) {
-            Salary = e.price;
-            return { ...e, count: e.count - 1 };
-          }
-          return e;
-        });
-        setProdact(newProdact);
-        setTotalPrice(totalPrice - Salary);
-        setCounter(counter - 1);
-      }
-    } catch (error) {
-      toast.error(error.response?.data?.message || error.message, {
-        position: "top-right",
-        autoClose: 3000,
-        theme: "dark",
-        transition: Bounce,
-      });
-    }
-  };
-
-  const deleteItem = async (id) => {
-    let Salary = 0;
-    let count = 0;
-    prodact.forEach((e) => {
-      if (e.id === id) {
-        Salary = e.price;
-        count = e.count;
-      }
+  const HandlePayment = async (paymentMethod) => {
+    const response = await axiosAuth.post("/CheckOuts/Pay", {
+      PaymentMethod: paymentMethod,
     });
+    return response.data;
+  };
 
-    try {
-      const respnse = await axiosAuth.delete(`https://mytshop.runasp.net/api/Carts/${id}`);
-      if ([200, 201, 204].includes(respnse.status)) {
-        const newProdact = prodact.filter((e) => e.id !== id);
-        setProdact(newProdact);
-        setTotalPrice(totalPrice - Salary * count);
-        setCounter(counter - count);
+  const mutationPayment = useMutation({
+    mutationFn: HandlePayment,
+    onSuccess: (data) => {
+      if (data.url) {
+        location.href = data.url;
+      } else {
+        toast.success("تم الدفع بنجاح");
       }
-    } catch (error) {
+      queryClient.invalidateQueries(["CartProducts"]);
+    },
+    onError: (error) => {
       toast.error(error.response?.data?.message || error.message, {
         position: "top-right",
         autoClose: 3000,
         theme: "dark",
         transition: Bounce,
       });
-    }
+    },
+  });
+
+  const handleSubmit = () => {
+    mutationPayment.mutate(PymentMethod);
   };
 
-  const ClearCart = async () => {
-    try {
-      await axiosAuth.delete("https://mytshop.runasp.net/api/Carts/clearCart");
-      setProdact([]);
-      setTotalPrice(0);
-      toast.success("Clear all is done", {
+  // زيادة الكمية
+  const mutationIncrease = useMutation({
+    mutationFn: (id) =>
+      axiosAuth.patch(`/Carts/increaseCount/${id}`).then((res) => res.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["CartProducts"]);
+      setCounter((c) => c + 1);
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || error.message, {
         position: "top-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        pauseOnHover: true,
-        draggable: true,
+        autoClose: 3000,
         theme: "dark",
         transition: Bounce,
       });
+    },
+  });
+
+  // نقص الكمية
+  const mutationDecrease = useMutation({
+    mutationFn: (id) =>
+      axiosAuth.patch(`/Carts/decreaseCount/${id}`).then((res) => res.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["CartProducts"]);
+      setCounter((c) => c - 1);
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || error.message, {
+        position: "top-right",
+        autoClose: 3000,
+        theme: "dark",
+        transition: Bounce,
+      });
+    },
+  });
+
+  // حذف عنصر
+  const mutationDelete = useMutation({
+    mutationFn: (id) => axiosAuth.delete(`/Carts/${id}`).then((res) => res.data),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries(["CartProducts"]);
+      // تحديث العداد بناءً على العنصر المحذوف (يمكن تحسينه حسب البيانات)
+      const item = data?.cartResponse.find((e) => e.id === id);
+      if (item) {
+        setCounter((c) => c - item.count);
+      }
+      toast.success("تم حذف العنصر بنجاح");
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || error.message, {
+        position: "top-right",
+        autoClose: 3000,
+        theme: "dark",
+        transition: Bounce,
+      });
+    },
+  });
+
+  // تفريغ العربة
+  const mutationClear = useMutation({
+    mutationFn: () => axiosAuth.delete("/Carts/clearCart").then((res) => res.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["CartProducts"]);
       setCounter(0);
-    } catch (error) {
+      toast.success("تم تفريغ العربة");
+    },
+    onError: (error) => {
       toast.error(error.response?.data?.message || error.message, {
         position: "top-right",
         autoClose: 3000,
         theme: "dark",
         transition: Bounce,
       });
-    }
-  };
+    },
+  });
 
-  if (isError) return <ErrorPage />;
+  if (isError) return <ErrorPage error={error} />;
   if (isLoading) return <Loader />;
-
 
   return (
     <Container maxWidth="lg" sx={{ mt: 6, mb: 6 }}>
@@ -201,7 +158,7 @@ function Cart() {
         🛒 Shopping Cart
       </Typography>
 
-      {prodact.length === 0 ? (
+      {data.cartResponse.length === 0 ? (
         <Typography variant="h6" textAlign="center" mt={5}>
           Your cart is empty.
         </Typography>
@@ -210,7 +167,7 @@ function Cart() {
           <Box textAlign="right" mb={2}>
             <Box
               component="button"
-              onClick={ClearCart}
+              onClick={() => mutationClear.mutate()}
               sx={{
                 backgroundColor: theme.palette.error.main,
                 color: theme.palette.error.contrastText,
@@ -233,7 +190,7 @@ function Cart() {
           </Box>
 
           <Grid container spacing={4} sx={{ mb: 4 }}>
-            {prodact.map((item) => (
+            {data.cartResponse.map((item) => (
               <Grid item xs={12} md={6} lg={4} key={item.id}>
                 <Card
                   sx={{
@@ -286,7 +243,7 @@ function Cart() {
                       <Box
                         component="button"
                         sx={iconBtnSx(theme)}
-                        onClick={() => decreaseQuantity(item.id)}
+                        onClick={() => mutationDecrease.mutate(item.id)}
                         disabled={item.count <= 1}
                       >
                         −
@@ -295,7 +252,7 @@ function Cart() {
                       <Box
                         component="button"
                         sx={iconBtnSx(theme)}
-                        onClick={() => increaseQuantity(item.id)}
+                        onClick={() => mutationIncrease.mutate(item.id)}
                       >
                         +
                       </Box>
@@ -303,7 +260,7 @@ function Cart() {
                       <Box
                         component="button"
                         sx={deleteBtnSx(theme)}
-                        onClick={() => deleteItem(item.id)}
+                        onClick={() => mutationDelete.mutate(item.id)}
                       >
                         🗑️
                       </Box>
@@ -328,7 +285,7 @@ function Cart() {
               Total Price:
             </Typography>
             <Typography variant="h5" color="primary" fontWeight="bold" mt={1}>
-              ${totalPrice.toFixed(2)}
+              ${data.totalPrice.toFixed(2)}
             </Typography>
           </Paper>
 
@@ -351,14 +308,19 @@ function Cart() {
               <FormLabel component="legend" sx={{ mb: 1 }}>
                 Choose Payment Method
               </FormLabel>
-              <RadioGroup value={PymentMethod} onChange={hendleChange} row>
+              <RadioGroup value={PymentMethod} onChange={handleChange} row>
                 <FormControlLabel value="Visa" control={<Radio />} label="Visa" />
                 <FormControlLabel value="cash" control={<Radio />} label="Cash" />
                 <FormControlLabel value="Other" control={<Radio />} label="Other" />
               </RadioGroup>
             </FormControl>
 
-            <Box component="button" onClick={HandlePayment} sx={checkoutBtnSx(theme)}>
+            <Box
+              component="button"
+              onClick={handleSubmit}
+              disabled={mutationPayment.isLoading}
+              sx={checkoutBtnSx(theme)}
+            >
               💳 Checkout
             </Box>
           </Box>

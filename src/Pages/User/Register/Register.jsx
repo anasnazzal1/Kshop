@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Container,
   Box,
@@ -12,11 +12,11 @@ import { useForm } from 'react-hook-form';
 import axios from 'axios';
 import { Bounce, toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
 
 const Register = () => {
-    const [DoneReqToButton,SetDone] = useState(false)
-  
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+
   const {
     register,
     handleSubmit,
@@ -24,41 +24,45 @@ const Register = () => {
     formState: { errors },
   } = useForm();
 
-  const password = watch("password"); //to match
+  const password = watch("password");
 
-   const RegisterUser = async (data) => {
-  
-  try {
-    const response = await axios.post("https://mytshop.runasp.net/api/Account/register", data);
-    
-     toast.success('Register is success', {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: false,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "dark",
-            transition: Bounce,
-            });
-            SetDone(true)
-            navigate("/Login")
-  } catch (error) {
-   
-    toast.error(`${error.message}`, {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: false,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "dark",
-          transition: Bounce,
-          });
-  }
-};
+  // 🟡 React Query Mutation
+  const mutation = useMutation({
+    mutationFn: async (data) => {
+      return axios.post("https://mytshop.runasp.net/api/Account/register", data);
+    },
+    onSuccess: () => {
+      toast.success('Register is success', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+        transition: Bounce,
+      });
+      navigate("/Login");
+    },
+    onError: (error) => {
+      toast.error(`${error?.message}`, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+        transition: Bounce,
+      });
+    },
+  });
+
+  const onSubmit = (data) => {
+    mutation.mutate(data);
+  };
 
   return (
     <Container component="main" maxWidth="sm">
@@ -67,7 +71,7 @@ const Register = () => {
           Create an Account
         </Typography>
 
-        <Box component="form" noValidate onSubmit={handleSubmit(RegisterUser)}>
+        <Box component="form" noValidate onSubmit={handleSubmit(onSubmit)}>
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
               <TextField
@@ -191,8 +195,14 @@ const Register = () => {
             </Grid>
           </Grid>
 
-          <Button type="submit" fullWidth variant="contained" sx={{ mt: 3 }} disabled={DoneReqToButton}>
-            {DoneReqToButton?  "Loading...":"Register"}
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            sx={{ mt: 3 }}
+            disabled={mutation.isLoading}
+          >
+            {mutation.isLoading ? "Loading..." : "Register"}
           </Button>
         </Box>
       </Paper>

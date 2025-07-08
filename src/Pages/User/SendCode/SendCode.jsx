@@ -3,6 +3,7 @@ import axios from "axios";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { Bounce, toast } from "react-toastify";
+import { useMutation } from "@tanstack/react-query";
 
 function SendCode() {
   const navigate = useNavigate();
@@ -14,26 +15,25 @@ function SendCode() {
   } = useForm();
   const password = watch("password");
 
-  const Send = async (data) => {
-  
-    try {
-      const response = await axios.patch( "https://mytshop.runasp.net/api/Account/SendCode", data);
-      if (response.status === 200) {
-        toast.success('the change password is sucsess!', {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: false,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "dark",
-            transition: Bounce,
-            });
-        navigate("/Login");
-      }
-    } catch (error) {
-      
+  // تعريف useMutation بالطريقة الجديدة
+  const mutation = useMutation({
+    mutationFn: (data) =>
+      axios.patch("https://mytshop.runasp.net/api/Account/SendCode", data),
+    onSuccess: () => {
+      toast.success('the change password is success!', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+        transition: Bounce,
+      });
+      navigate("/Login");
+    },
+    onError: () => {
       toast.error('wrong code or information', {
         position: "top-right",
         autoClose: 3000,
@@ -44,8 +44,13 @@ function SendCode() {
         progress: undefined,
         theme: "dark",
         transition: Bounce,
-        });
-    }
+      });
+    },
+  });
+
+  // عند الإرسال نستخدم mutate
+  const onSubmit = (data) => {
+    mutation.mutate(data);
   };
 
   return (
@@ -71,7 +76,7 @@ function SendCode() {
           Enter your email, code and new password below.
         </Typography>
 
-        <Box component="form" noValidate onSubmit={handleSubmit(Send)}>
+        <Box component="form" noValidate onSubmit={handleSubmit(onSubmit)}>
           <Grid container spacing={3}>
             <Grid item xs={12}>
               <TextField
@@ -161,8 +166,9 @@ function SendCode() {
                     backgroundColor: "#e1e7ff",
                   },
                 }}
+                disabled={mutation.isLoading}
               >
-                Reset Password
+                {mutation.isLoading ? "Processing..." : "Reset Password"}
               </Button>
             </Grid>
           </Grid>

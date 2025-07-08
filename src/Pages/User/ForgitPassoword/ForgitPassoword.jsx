@@ -3,8 +3,9 @@ import axios from "axios";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { Bounce, toast } from "react-toastify";
+import { useMutation } from "@tanstack/react-query";
 
-function ForgitPassoword() {
+function ForgotPassword() {
   const navigate = useNavigate();
   const {
     register,
@@ -12,24 +13,28 @@ function ForgitPassoword() {
     formState: { errors },
   } = useForm();
 
-  const Send = async (data) => {
-    try {
-      const response = await axios.post(
-        "https://mytshop.runasp.net/api/Account/ForgotPassword",
-        data
-      );
-     
-      if (response.status === 200) {
-        navigate("/sendCode");
-      }
-    } catch (error) {
+  // استخدام useMutation مع React Query
+  const mutation = useMutation(
+    (data) => axios.post("https://mytshop.runasp.net/api/Account/ForgotPassword", data),
+    {
+      onSuccess: (response) => {
+        if (response.status === 200) {
+          navigate("/sendCode");
+        }
+      },
+      onError: (error) => {
         toast.error(error.response?.data?.message || error.message, {
-        position: "top-right",
-        autoClose: 3000,
-        theme: "dark",
-        transition: Bounce,
-      });
+          position: "top-right",
+          autoClose: 3000,
+          theme: "dark",
+          transition: Bounce,
+        });
+      },
     }
+  );
+
+  const onSubmit = (data) => {
+    mutation.mutate(data);
   };
 
   return (
@@ -42,7 +47,7 @@ function ForgitPassoword() {
         <Box
           component="form"
           noValidate
-          onSubmit={handleSubmit(Send)}
+          onSubmit={handleSubmit(onSubmit)}
           sx={{ mt: 2 }}
         >
           <TextField
@@ -68,9 +73,10 @@ function ForgitPassoword() {
             fullWidth
             variant="contained"
             color="primary"
+            disabled={mutation.isLoading}
             sx={{ mt: 3, py: 1.5, fontWeight: "bold", fontSize: "16px" }}
           >
-            Send
+            {mutation.isLoading ? "Sending..." : "Send"}
           </Button>
         </Box>
       </Paper>
@@ -78,4 +84,4 @@ function ForgitPassoword() {
   );
 }
 
-export default ForgitPassoword;
+export default ForgotPassword;

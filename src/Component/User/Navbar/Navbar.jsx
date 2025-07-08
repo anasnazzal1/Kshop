@@ -16,12 +16,16 @@ import { Link, useNavigate } from 'react-router-dom';
 import { CartContext } from '../../../Context/CartContext';
 import { useContext } from 'react';
 import { ThemeContext } from '../../../Context/ThemeContext';
+import { useQueryClient } from '@tanstack/react-query';
 
 const PagesUser = ["home", "cart", "logout"];
 const pageGuest = ["home", 'Login', "register"];
 
 function Navbar() {
-  const { counter } = useContext(CartContext);
+  const cart = useContext(CartContext);
+const queryClient = useQueryClient();
+
+const counter = cart?.counter || 0; // افتراضي 0 لو كان null
   const { mode, toogleMode } = useContext(ThemeContext);
 
   const [anchorElNav, setAnchorElNav] = React.useState(null);

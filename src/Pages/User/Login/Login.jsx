@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React from 'react';
 import {
   Container,
   Box,
@@ -11,15 +11,11 @@ import { useForm } from 'react-hook-form';
 import { Bounce, toast } from 'react-toastify';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
-
+import { jwtDecode } from 'jwt-decode';
+import { useMutation } from '@tanstack/react-query';
 
 const Login = () => {
-  // لعمل loading لل button
-  const [DoneReqToButton,SetDone] = useState(false)
   const navigate = useNavigate();
-
-  
-
 
   const {
     register,
@@ -27,39 +23,38 @@ const Login = () => {
     formState: { errors },
   } = useForm();
 
-  const LoginUser = async (data) => {
-    
-    try {
+  // 🟡 React Query Mutation for login
+  const mutation = useMutation({
+    mutationFn: async (data) => {
       const response = await axios.post("https://mytshop.runasp.net/api/Account/Login", data);
-      
-      localStorage.setItem("UserToken", response.data.token);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      localStorage.setItem("UserToken", data.token);
+      const decode = jwtDecode(data.token);
+      const role = decode["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+      if (role === "SuperAdmin") navigate("/dashbord");
+      else navigate("/home");
+
       toast.success('Login is success', {
         position: "top-right",
         autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: false,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
         theme: "dark",
         transition: Bounce,
       });
-      SetDone(true)
-      navigate("/home");
-    } catch (error) {
-      
-      toast.error(`${error.message}`, {
+    },
+    onError: (error) => {
+      toast.error(`${error?.message}`, {
         position: "top-right",
         autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: false,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
         theme: "dark",
         transition: Bounce,
       });
-    }
+    },
+  });
+
+  const onSubmit = (data) => {
+    mutation.mutate(data);
   };
 
   return (
@@ -75,7 +70,7 @@ const Login = () => {
           Login
         </Typography>
 
-        <Box component="form" noValidate sx={{ mt: 2 }} onSubmit={handleSubmit(LoginUser)}>
+        <Box component="form" noValidate sx={{ mt: 2 }} onSubmit={handleSubmit(onSubmit)}>
           <TextField
             label="Email"
             type="email"
@@ -89,8 +84,9 @@ const Login = () => {
                 message: "Invalid email address"
               }
             })}
+            error={!!errors.email}
+            helperText={errors.email?.message}
           />
-          {errors.email && <p style={{ color: "red" }}>{errors.email.message}</p>}
 
           <TextField
             label="Password"
@@ -101,24 +97,24 @@ const Login = () => {
             {...register("password", {
               required: "Password is required",
               pattern: {
-                value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/,
-                message: "Password must be at least 8 characters and include uppercase, lowercase, number, and special character"
+                value: /^(?=(?:.*\d){1,})(?=(?:.*[A-Za-z]){5,}).{7,}$/,
+                message: "Password must be at least 5 letters and include at least 1 number"
               }
             })}
+            error={!!errors.password}
+            helperText={errors.password?.message}
           />
-          {errors.password && <p style={{ color: "red" }}>{errors.password.message}</p>}
 
           <Button
             type="submit"
             fullWidth
             variant="contained"
             sx={{ mt: 3 }}
-            disabled={DoneReqToButton}
+            disabled={mutation.isLoading}
           >
-            {DoneReqToButton?  "Loading...":"Sign In "}
+            {mutation.isLoading ? "Loading..." : "Sign In"}
           </Button>
 
-          {/* Forgot Password Link */}
           <Box textAlign="center" mt={2}>
             <Link to="/ForgitPassoword" style={{ textDecoration: 'none', color: '#1976d2', fontWeight: 'bold' }}>
               Forgot Password?

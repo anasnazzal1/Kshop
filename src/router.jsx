@@ -9,7 +9,10 @@ import ProdactDetails from "./Pages/User/ProdactDetails/ProdactDetails";
 import ForgitPassoword from "./Pages/User/ForgitPassoword/ForgitPassoword";
 import SendCode from "./Pages/User/SendCode/SendCode";
 import ProtactedRouter from "./Component/ProtactedRouter/ProtactedRouter";
+import DashbordLayout from "./Layout/DashbordLayout";
 
+import DashbordProtactedRouter from "./Component/ProtactedRouter/DashbordProtactedRouter";
+import Dashbord from "./Pages/Admin/Dashbord/Dashbord";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -30,6 +33,20 @@ const router = createBrowserRouter([
       { path: "sendcode", element: <SendCode /> },
     ],
   },
+  {
+     path: "/dashbord",
+    element:
+    
+    <DashbordProtactedRouter>
+      <DashbordLayout />
+    </DashbordProtactedRouter>
+    ,
+    errorElement: <ErrorPage />,
+    children: [
+      { index: true, element:<Dashbord/> },
+
+    ]
+  }
 ]);
 
 export default router;
