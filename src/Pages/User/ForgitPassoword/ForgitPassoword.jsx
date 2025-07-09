@@ -14,24 +14,30 @@ function ForgotPassword() {
   } = useForm();
 
   // استخدام useMutation مع React Query
-  const mutation = useMutation(
-    (data) => axios.post("https://mytshop.runasp.net/api/Account/ForgotPassword", data),
-    {
-      onSuccess: (response) => {
-        if (response.status === 200) {
-          navigate("/sendCode");
-        }
-      },
-      onError: (error) => {
-        toast.error(error.response?.data?.message || error.message, {
-          position: "top-right",
-          autoClose: 3000,
-          theme: "dark",
-          transition: Bounce,
-        });
-      },
+  const mutation = useMutation({
+  mutationFn: (data) =>
+    axios.post("https://mytshop.runasp.net/api/Account/ForgotPassword", data),
+  onSuccess: (response) => {
+    if (response.status === 200) {
+      toast.success("Check your email for the reset code.", {
+        position: "top-right",
+        autoClose: 3000,
+        theme: "dark",
+        transition: Bounce,
+      });
+      navigate("/sendCode");
     }
-  );
+  },
+  onError: (error) => {
+    toast.error(error.response?.data?.message || error.message, {
+      position: "top-right",
+      autoClose: 3000,
+      theme: "dark",
+      transition: Bounce,
+    });
+  },
+});
+
 
   const onSubmit = (data) => {
     mutation.mutate(data);

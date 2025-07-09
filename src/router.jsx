@@ -13,6 +13,9 @@ import DashbordLayout from "./Layout/DashbordLayout";
 
 import DashbordProtactedRouter from "./Component/ProtactedRouter/DashbordProtactedRouter";
 import Dashbord from "./Pages/Admin/Dashbord/Dashbord";
+import Profile from "./Pages/User/Profile/Profile";
+import OrderDetails from "./Pages/User/OrderDetails/OrderDetails";
+import ProdactOfCatgry from "./Pages/User/ProdactOfCatgry/ProdactOfCatgry";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -30,7 +33,15 @@ const router = createBrowserRouter([
       { path: "register", element: <Register /> },
       { path: "home/details/:id", element: <ProdactDetails />,viewTransition: true  },
       { path: "ForgitPassoword", element: <ForgitPassoword /> },
+       {path:"Profile", element:
+        <ProtactedRouter>
+          <Profile/>
+        </ProtactedRouter>
+       },
       { path: "sendcode", element: <SendCode /> },
+      {path:"Profile/OrderDetails/:id",element:<OrderDetails/>},
+      {path:"home/ProdactOfCatgry/:id",element:<ProdactOfCatgry/>}
+      
     ],
   },
   {

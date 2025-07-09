@@ -32,7 +32,8 @@ function Prodact() {
     queryFn: () => axios.get('https://mytshop.runasp.net/api/products').then(res => res.data.data),
   });
   
-
+console.log("prodact")
+console.log(data)
 
 
 

@@ -22,6 +22,7 @@ const PagesUser = ["home", "cart", "logout"];
 const pageGuest = ["home", 'Login', "register"];
 
 function Navbar() {
+
   const cart = useContext(CartContext);
 const queryClient = useQueryClient();
 
@@ -207,7 +208,7 @@ const counter = cart?.counter || 0; // افتراضي 0 لو كان null
               open={Boolean(anchorElUser)}
               onClose={handleCloseUserMenu}
             >
-              {['Profile', 'Account', 'Dashboard', 'Logout'].map((setting) => (
+              {['Profile',   'Logout'].map((setting) => (
                 <MenuItem
                   key={setting}
                   onClick={() => {
@@ -215,6 +216,11 @@ const counter = cart?.counter || 0; // افتراضي 0 لو كان null
                     if (setting === "Logout") {
                       logout();
                     }
+                    else if(setting === "Profile")
+                    {
+                      navigate("/Profile")
+                    }
+                   
                     handleCloseUserMenu();
                   }}
                 >
