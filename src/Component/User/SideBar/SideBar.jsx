@@ -8,7 +8,7 @@ const menuItems = [
   { label: "Orders", key: "orders" },
 ];
 
-const Dashbord = () => {
+const UserSidebar = () => {
   const [activePage, setActivePage] = useState("info");
 
   const renderContent = () => {
@@ -66,4 +66,4 @@ const Dashbord = () => {
   );
 };
 
-export default Dashbord;
+export default UserSidebar;
