@@ -29,8 +29,7 @@ function ProdactOfCatgry() {
         .then((res) => res.data),
     staleTime: 5 * 60 * 1000,
   });
-  console.log(data)
-
+  
   if (isLoading) return <Loader />;
   if (isError) return <ErrorPage />;
 
